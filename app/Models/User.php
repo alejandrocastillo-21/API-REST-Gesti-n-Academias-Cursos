@@ -29,4 +29,11 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    // Un usuario tiene MUCHAS academias (relación 1:N, lado "1").
+// Laravel busca en la tabla "academies" la columna "user_id" por sí solo.
+    public function academies()
+    {
+        return $this->hasMany(Academy::class);
+    }
 }
