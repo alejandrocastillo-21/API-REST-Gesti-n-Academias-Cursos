@@ -8,7 +8,7 @@ class Academy extends Model
 {
     public function user()
     {
-        // Una academia PERTENECE A un usuario (lado "N" de la relación).
+        // Una academia PERTENECE A un usuario (lado "N" de la relación).   
         // Usa la columna "user_id" de la tabla academies.
         return $this->belongsTo(User::class);
     }
