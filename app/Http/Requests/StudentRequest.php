@@ -20,12 +20,21 @@ class StudentRequest extends FormRequest
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
-    public static function rules(): array
+    public static function rules($id = null): array
     {
+        // Regla base del email, igual que la tuya.
+        $reglaEmail = 'required|email|max:255|unique:students,email';
+
+        // Si nos pasan un id, lo añadimos al final
+        // para que Laravel ignore a ese alumno al comprobar la unicidad.
+        //único en students, columna email, ignorando la fila con id 5
+        if ($id != null) {
+            $reglaEmail = $reglaEmail . ',' . $id;
+        }
         return [
             'name' => 'required|string|max:255',
             'surname' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:students,email',
+            'email' => $reglaEmail,
             'phone' => 'nullable|string|max:20',
             'date_of_birth' => 'required|date',
         ];

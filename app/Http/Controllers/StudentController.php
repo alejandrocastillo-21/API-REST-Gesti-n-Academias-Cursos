@@ -50,8 +50,8 @@ class StudentController extends Controller
         if ($student == null) {
             return response()->json(['message' => 'Estudiante no encontrado'], 404);
         }
-
-        $request->validate(StudentRequest::rules());
+        //recibe el id para que excluya al usuario que se esta editando para no tener problemas con el email
+        $request->validate(StudentRequest::rules($id));
 
         $student->name = $request->name;
         $student->surname = $request->surname;
