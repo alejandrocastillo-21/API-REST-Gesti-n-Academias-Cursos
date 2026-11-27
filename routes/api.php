@@ -28,3 +28,8 @@ Route::get('/inicio', function () {
 // Busca en AcademyController los métodos: index, show, store, update y destroy.
 // 'academies' es la parte de la URL: /api/academies
 Route::apiResource('academies', AcademyController::class);
+
+// Ruta anidada: los cursos de una academia.
+// {id} es el id de la academia. El método "courses" lo escribimos nosotros
+// en AcademyController (no es uno de los cinco del apiResource).
+Route::get('/academies/{id}/courses', [AcademyController::class, 'courses']);

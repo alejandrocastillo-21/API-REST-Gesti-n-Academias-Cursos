@@ -122,4 +122,23 @@ class AcademyController extends Controller
 
         return response()->json(['message' => 'Academia eliminada'], 200);
     }
+
+    // Recibe el $id de la academia que viene en la URL.
+    public function courses($id)
+    {
+        // 1. Buscamos la academia (igual que en show).
+        $academy = Academy::find($id);
+
+        // 2. Si la academia no existe, 404.
+        if ($academy == null) {
+            return response()->json(['message' => 'Academia no encontrada'], 404);
+        }
+
+        // 3. $academy->courses (SIN paréntesis) ejecuta la relación hasMany
+        // y devuelve los cursos cuya columna academy_id sea el id de esta academia.
+        $courses = $academy->courses;
+
+        // 4. Devolvemos la lista con 200.
+        return response()->json($courses, 200);
+    }
 }
