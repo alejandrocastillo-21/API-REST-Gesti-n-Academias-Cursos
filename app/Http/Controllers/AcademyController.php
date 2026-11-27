@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Academy; // Importamos el modelo para poder usarlo
 use Illuminate\Http\Request;
+use App\Http\Requests\AcademyRequest; 
 
 class AcademyController extends Controller
 {
@@ -35,34 +36,15 @@ class AcademyController extends Controller
         return response()->json($academy, 200);
     }
 
-    // Request $request contiene todo lo que ha enviado el cliente.
-    public function store(Request $request)
+    // AcademyRequest $request contiene todo lo que ha enviado el cliente.
+    public function store(AcademyRequest $request)
     {
-        // validate() comprueba los datos que llegaron en la petición.
-        // Cada campo tiene sus reglas escritas en un texto, separadas por "|".
-        // Si alguna regla falla, Laravel DETIENE el método aquí mismo
-        // y devuelve un error 422 con los problemas encontrados.
-        // Si todo está bien, el código continúa hacia abajo.
-        $request->validate([
+         /** Hemos dejado de usar request->validation[()] porque repetimos el codigo, por lo que optamos a crear con artisan un AcademyRequest.
+         * Al recibir el codigo, lo primero de todo comorueba que el request sea valido, ve que funciona y continua, si no salta su excepcion correspondiente.
+         * Esto tiene un fallo a la hora de lanzar errores porque el orden correcto en este ejemplo PUT /academies/999 seria primero 404 y luego 422, por lo que
+         * tenemos que llamar al metodo despues del find y el metodo recibiria Request request, lo vemos en el update.
+         */
 
-            // exists:users,id = el valor debe existir en la columna "id" de la tabla "users".
-            // Evita el error de la clave foránea que vimos antes.
-            'user_id' => 'required|exists:users,id',
-
-            // required = obligatorio. string = debe ser texto. max:255 = máximo 255 caracteres.
-            'name' => 'required|string|max:255',
-
-            // nullable = puede venir vacío o no venir. Si viene, debe ser texto.
-            'description' => 'nullable|string',
-
-            'address' => 'required|string|max:255',
-
-            // Mismo máximo que pusimos en la migración (20).
-            'phone' => 'required|string|max:20',
-
-            // email = debe tener formato de correo (algo@dominio.com).
-            'email' => 'required|email|max:255',
-        ]);
         // Creamos un objeto Academy vacío (todavía no está en la base de datos).
         $academy = new Academy();
 
@@ -88,21 +70,14 @@ class AcademyController extends Controller
     {
         // 1. Buscamos la academia que se quiere modificar.
         $academy = Academy::find($id);
-
+        
         // 2. Si no existe, cortamos con un 404 (igual que en show).
         if ($academy == null) {
             return response()->json(['message' => 'Academia no encontrada'], 404);
         }
+        //Despues la comprobacion del id, comprobamos si tiene datos erroneos para seguir una buena estructura de errores
+        $request->validate(AcademyRequest::rules());
 
-        // 3. Validamos los datos nuevos (mismas reglas que en store).
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'address' => 'required|string|max:255',
-            'phone' => 'required|string|max:20',
-            'email' => 'required|email|max:255',
-        ]);
 
         // 4. Cambiamos los valores del objeto que ya existe.
         // Ojo: NO usamos "new Academy()", porque no queremos crear otra,
