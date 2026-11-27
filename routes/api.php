@@ -24,6 +24,19 @@ Route::get('/inicio', function () {
 
 });
 
+// Rutas PÚBLICAS: el usuario todavía no tiene token.
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+
+// Rutas PROTEGIDAS: solo entra quien envíe un token válido.
+// auth:sanctum es un "middleware": un guardia que se pone delante de la ruta.
+// Comprueba el token ANTES de ejecutar el controlador. Si no es válido, devuelve 401.
+// group agrupa varias rutas bajo el mismo guardia.
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
+});
+
+
 /// apiResource crea de una vez las cinco rutas del CRUD para academias.
 // Busca en AcademyController los métodos: index, show, store, update y destroy.
 // 'academies' es la parte de la URL: /api/academies
@@ -42,3 +55,4 @@ Route::post('/courses/{id}/students', [CourseController::class, 'enroll']);
 
 // Desmatricular: el alumno va en la URL, porque identifica QUÉ se borra.
 Route::delete('/courses/{id}/students/{studentId}', [CourseController::class, 'unenroll']);
+
