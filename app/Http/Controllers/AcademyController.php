@@ -38,6 +38,31 @@ class AcademyController extends Controller
     // Request $request contiene todo lo que ha enviado el cliente.
     public function store(Request $request)
     {
+        // validate() comprueba los datos que llegaron en la petición.
+        // Cada campo tiene sus reglas escritas en un texto, separadas por "|".
+        // Si alguna regla falla, Laravel DETIENE el método aquí mismo
+        // y devuelve un error 422 con los problemas encontrados.
+        // Si todo está bien, el código continúa hacia abajo.
+        $request->validate([
+
+            // exists:users,id = el valor debe existir en la columna "id" de la tabla "users".
+            // Evita el error de la clave foránea que vimos antes.
+            'user_id' => 'required|exists:users,id',
+
+            // required = obligatorio. string = debe ser texto. max:255 = máximo 255 caracteres.
+            'name' => 'required|string|max:255',
+
+            // nullable = puede venir vacío o no venir. Si viene, debe ser texto.
+            'description' => 'nullable|string',
+
+            'address' => 'required|string|max:255',
+
+            // Mismo máximo que pusimos en la migración (20).
+            'phone' => 'required|string|max:20',
+
+            // email = debe tener formato de correo (algo@dominio.com).
+            'email' => 'required|email|max:255',
+        ]);
         // Creamos un objeto Academy vacío (todavía no está en la base de datos).
         $academy = new Academy();
 
