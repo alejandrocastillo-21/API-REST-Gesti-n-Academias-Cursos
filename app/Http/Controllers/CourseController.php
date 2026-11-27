@@ -32,6 +32,14 @@ class CourseController extends Controller
         // Objeto Course vacío (todavía no está en la base de datos).
         $course = new Course();
 
+        // Buscamos la academia donde se quiere crear el curso.
+        $academy = Academy::find($request->academy_id);
+
+        // Si la academia es de otro usuario, 403.
+        if ($academy->user_id != $request->user()->id) {
+            return response()->json(['message' => 'No puedes crear cursos en una academia que no es tuya'], 403);
+        }
+
         // Rellenamos las seis columnas con lo que envió Postman.
         $course->academy_id = $request->academy_id;
         $course->name = $request->name;
@@ -50,16 +58,28 @@ class CourseController extends Controller
     // Recibe un Request normal (no CourseRequest) para poder buscar ANTES de validar.
     public function update(Request $request, $id)
     {
-        // 1. Buscamos el curso.
         $course = Course::find($id);
 
-        // 2. Si no existe, 404.
         if ($course == null) {
             return response()->json(['message' => 'Curso no encontrado'], 404);
         }
 
-        // 3. Validamos DESPUÉS del 404, usando las reglas de CourseRequest.
+        // $course->academy (sin paréntesis) es la academia del curso.
+        // ->user_id es el dueño de esa academia.
+        if ($course->academy->user_id != $request->user()->id) {
+            return response()->json(['message' => 'No tienes permiso para modificar este curso'], 403);
+        }
+
         $request->validate(CourseRequest::rules());
+
+        // Segundo control: el usuario puede cambiar el academy_id del curso.
+        // La academia NUEVA también tiene que ser suya; si no, podría "regalar"
+        // su curso a la academia de otro. Aquí ya sabemos que existe (lo validó exists).
+        $nuevaAcademia = Academy::find($request->academy_id);
+
+        if ($nuevaAcademia->user_id != $request->user()->id) {
+            return response()->json(['message' => 'No puedes mover el curso a una academia que no es tuya'], 403);
+        }
 
         // 4. Cambiamos los valores del objeto que ya existe (sin "new").
         $course->academy_id = $request->academy_id;
@@ -75,7 +95,7 @@ class CourseController extends Controller
         // 6. 200: se ha modificado, no creado.
         return response()->json($course, 200);
     }
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         // 1. Buscamos el curso.
         $course = Course::find($id);
@@ -83,6 +103,10 @@ class CourseController extends Controller
         // 2. Si no existe, 404.
         if ($course == null) {
             return response()->json(['message' => 'Curso no encontrado'], 404);
+        }
+
+        if ($course->academy->user_id != $request->user()->id) {
+            return response()->json(['message' => 'No tienes permiso para eliminar este curso'], 403);
         }
 
         // 3. $course->students usa la relación belongsToMany de la Fase 3.
@@ -119,7 +143,7 @@ class CourseController extends Controller
         return response()->json($students, 200);
     }
 
-    public function enroll(Request $request, $id)
+    public function enroll(Request $request, $id, )
     {
         // 1. ¿Existe el curso?
         $course = Course::find($id);
@@ -157,7 +181,7 @@ class CourseController extends Controller
         return response()->json(['message' => 'Alumno matriculado correctamente'], 201);
     }
 
-    public function unenroll($id, $studentId)
+    public function unenroll(Request $request, $id, $studentId)
     {
         // 1. ¿Existe el curso?
         $course = Course::find($id);
@@ -165,6 +189,12 @@ class CourseController extends Controller
         if ($course == null) {
             return response()->json(['message' => 'Curso no encontrado'], 404);
         }
+
+        if ($studentId->user_id != $request->user()->id) {
+            return response()->json(['message' => 'No tienes permiso para eliminar este estudiante'], 403);
+        }
+
+
 
         // 2. ¿Está ese alumno matriculado en este curso?
         $matriculado = $course->students()->where('student_id', $studentId)->exists();

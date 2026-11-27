@@ -50,6 +50,9 @@ class StudentController extends Controller
         if ($student == null) {
             return response()->json(['message' => 'Estudiante no encontrado'], 404);
         }
+        if ($student->user_id != $request->user()->id) {
+            return response()->json(['message' => 'No tienes permiso para modificar este estudiante'], 403);
+        }
         //recibe el id para que excluya al usuario que se esta editando para no tener problemas con el email
         $request->validate(StudentRequest::rules($id));
 
@@ -64,12 +67,16 @@ class StudentController extends Controller
     }
 
     // Elimina un estudiante existente.
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $student = Student::find($id);
 
         if ($student == null) {
             return response()->json(['message' => 'Estudiante no encontrado'], 404);
+        }
+        // Primero el permiso (403)...
+        if ($student->user_id != $request->user()->id) {
+            return response()->json(['message' => 'No tienes permiso para eliminar este estudiante'], 403);
         }
 
         $student->delete();

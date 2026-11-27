@@ -36,23 +36,29 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 });
 
-
-/// apiResource crea de una vez las cinco rutas del CRUD para academias.
-// Busca en AcademyController los métodos: index, show, store, update y destroy.
-// 'academies' es la parte de la URL: /api/academies
-Route::apiResource('academies', AcademyController::class);
-
-// Ruta anidada: los cursos de una academia.
-// {id} es el id de la academia. El método "courses" lo escribimos nosotros
-// en AcademyController (no es uno de los cinco del apiResource).
+// PÚBLICAS: sin token.
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
 Route::get('/academies/{id}/courses', [AcademyController::class, 'courses']);
 
-// Ver los alumnos matriculados en un curso.
-Route::get('/courses/{id}/students', [CourseController::class, 'students']);
+// PROTEGIDAS: todo lo que esté aquí dentro exige token.
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
 
-// Matricular un alumno en un curso. El student_id viaja en el body.
-Route::post('/courses/{id}/students', [CourseController::class, 'enroll']);
 
-// Desmatricular: el alumno va en la URL, porque identifica QUÉ se borra.
-Route::delete('/courses/{id}/students/{studentId}', [CourseController::class, 'unenroll']);
+    /// apiResource crea de una vez las cinco rutas del CRUD para academias.
+// Busca en AcademyController los métodos: index, show, store, update y destroy.
+// 'academies' es la parte de la URL: /api/academies
+    Route::apiResource('academies', AcademyController::class);
+    Route::apiResource('courses', CourseController::class);
+    Route::apiResource('students', StudentController::class);
+
+    // Ruta anidada: los cursos de una academia.
+// {id} es el id de la academia. El método "courses" lo escribimos nosotros
+// en AcademyController (no es uno de los cinco del apiResource).
+    // Aquí dentro también tus tres rutas de matrículas (students, enroll, unenroll).
+    Route::get('/courses/{id}/students', [CourseController::class, 'students']);
+    Route::post('/courses/{id}/students', [CourseController::class, 'enroll']);
+    Route::delete('/courses/{id}/students/{studentId}', [CourseController::class, 'unenroll']);
+});
 

@@ -48,9 +48,9 @@ class AcademyController extends Controller
         // Creamos un objeto Academy vacío (todavía no está en la base de datos).
         $academy = new Academy();
 
-        // $request->name lee el campo "name" del JSON que envió Postman.
-        // Rellenamos cada columna una por una.
-        $academy->user_id = $request->user_id;
+        // $request->user() devuelve el usuario dueño del token enviado.
+// ->id es su id. Así la academia queda siempre a nombre de quien la crea.
+        $academy->user_id = $request->user()->id;
         $academy->name = $request->name;
         $academy->description = $request->description;
         $academy->address = $request->address;
@@ -68,14 +68,18 @@ class AcademyController extends Controller
     // Recibe dos cosas: el $request (los datos nuevos) y el $id (de la URL).
     public function update(Request $request, $id)
     {
-        // 1. Buscamos la academia que se quiere modificar.
         $academy = Academy::find($id);
 
-        // 2. Si no existe, cortamos con un 404 (igual que en show).
         if ($academy == null) {
             return response()->json(['message' => 'Academia no encontrada'], 404);
         }
-        //Despues la comprobacion del id, comprobamos si tiene datos erroneos para seguir una buena estructura de errores
+
+        // AUTORIZACIÓN: comparamos el dueño de la academia con el usuario del token.
+        // Si no coinciden, sabemos quién es (no es 401) pero no tiene permiso: 403.
+        if ($academy->user_id != $request->user()->id) {
+            return response()->json(['message' => 'No tienes permiso para modificar esta academia'], 403);
+        }
+
         $request->validate(AcademyRequest::rules());
 
 
@@ -98,13 +102,17 @@ class AcademyController extends Controller
     }
 
     // Solo necesita el $id: para borrar no hay que enviar datos en el cuerpo.
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $academy = Academy::find($id);
 
         if ($academy == null) {
             return response()->json(['message' => 'Academia no encontrada'], 404);
         }
+
+        if ($academy->user_id != $request->user()->id) {
+        return response()->json(['message' => 'No tienes permiso para eliminar esta academia'], 403);
+    }
 
         // $academy->courses usa la relación hasMany que definimos en la Fase 3.
         // count() devuelve cuántos cursos tiene esta academia.
