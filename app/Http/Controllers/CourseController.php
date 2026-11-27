@@ -143,7 +143,8 @@ class CourseController extends Controller
         return response()->json($students, 200);
     }
 
-    public function enroll(Request $request, $id, )
+    // Los dos valores de la URL llegan por posición: primero el curso, luego el alumno.
+    public function enroll(Request $request, $id, $studentId)
     {
         // 1. ¿Existe el curso?
         $course = Course::find($id);
@@ -152,31 +153,36 @@ class CourseController extends Controller
             return response()->json(['message' => 'Curso no encontrado'], 404);
         }
 
-        // 2. Validamos el dato enviado: debe venir y existir en la tabla students.
-        $request->validate([
-            'student_id' => 'required|exists:students,id',
-        ]);
+        // 2. ¿Existe el alumno? Ahora viene en la URL, así que se busca con find.
+        $student = Student::find($studentId);
 
-        // 3. ¿Ya está matriculado?
-        // students() CON paréntesis devuelve la relación para seguir consultando:
-        // where() filtra la pivote y exists() responde true o false.
-        $yaMatriculado = $course->students()->where('student_id', $request->student_id)->exists();
+        if ($student == null) {
+            return response()->json(['message' => 'Alumno no encontrado'], 404);
+        }
+
+        // 3. AUTORIZACIÓN: el dueño de la academia del curso debe ser el usuario del token.
+        if ($course->academy->user_id != $request->user()->id) {
+            return response()->json(['message' => 'No tienes permiso para matricular en este curso'], 403);
+        }
+
+        // 4. ¿Ya está matriculado? (409)
+        $relacion = $course->students();
+        $relacion = $relacion->where('student_id', $studentId);
+        $yaMatriculado = $relacion->exists();
 
         if ($yaMatriculado == true) {
             return response()->json(['message' => 'El alumno ya está matriculado en este curso'], 409);
         }
 
-        // 4. ¿Quedan plazas? Contamos los matriculados y comparamos con capacity.
+        // 5. ¿Quedan plazas? (409)
         $totalMatriculados = $course->students()->count();
 
         if ($totalMatriculados >= $course->capacity) {
             return response()->json(['message' => 'El curso no tiene plazas disponibles'], 409);
         }
 
-        // 5. attach() inserta una fila en la tabla pivote course_student.
-        // El segundo parámetro rellena las columnas extra: la fecha de matrícula.
-        // Como la relación tiene withTimestamps(), created_at y updated_at se rellenan solos.
-        $course->students()->attach($request->student_id, ['enrolled_at' => now()]);
+        // 6. Escribimos la línea en el "cuaderno de matrículas".
+        $course->students()->attach($studentId, ['enrolled_at' => now()]);
 
         return response()->json(['message' => 'Alumno matriculado correctamente'], 201);
     }
@@ -190,20 +196,28 @@ class CourseController extends Controller
             return response()->json(['message' => 'Curso no encontrado'], 404);
         }
 
-        if ($studentId->user_id != $request->user()->id) {
-            return response()->json(['message' => 'No tienes permiso para eliminar este estudiante'], 403);
+        // 2. ¿Existe el alumno?
+        $student = Student::find($studentId);
+
+        if ($student == null) {
+            return response()->json(['message' => 'Alumno no encontrado'], 404);
         }
 
+        // 3. AUTORIZACIÓN: solo el dueño de la academia del curso.
+        if ($course->academy->user_id != $request->user()->id) {
+            return response()->json(['message' => 'No tienes permiso para desmatricular en este curso'], 403);
+        }
 
-
-        // 2. ¿Está ese alumno matriculado en este curso?
-        $matriculado = $course->students()->where('student_id', $studentId)->exists();
+        // 4. ¿Está matriculado? Si no, no hay línea que tachar: 404.
+        $relacion = $course->students();
+        $relacion = $relacion->where('student_id', $studentId);
+        $matriculado = $relacion->exists();
 
         if ($matriculado == false) {
             return response()->json(['message' => 'El alumno no está matriculado en este curso'], 404);
         }
 
-        // 3. detach() borra la fila de la pivote. NO borra al alumno ni al curso.
+        // 5. Tachamos la línea (solo la matrícula, no el alumno ni el curso).
         $course->students()->detach($studentId);
 
         return response()->json(['message' => 'Alumno desmatriculado'], 200);
