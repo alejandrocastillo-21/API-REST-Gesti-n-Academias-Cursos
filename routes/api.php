@@ -35,3 +35,8 @@ Route::get('/academies/{id}', [AcademyController::class, 'show']);
 // POST = crear. Es la misma URL que el listado (/api/academies),
 // pero con otro verbo HTTP, así que Laravel sabe que es otra acción.
 Route::post('/academies', [AcademyController::class, 'store']);
+// put = editar. {id} indica qué academia se modifica.
+Route::put('/academies/{id}', [AcademyController::class, 'update']);
+
+// DELETE = borrar. {id} indica qué academia se elimina.
+Route::delete('/academies/{id}', [AcademyController::class, 'destroy']);

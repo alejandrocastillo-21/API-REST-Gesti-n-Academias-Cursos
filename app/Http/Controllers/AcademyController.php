@@ -82,4 +82,61 @@ class AcademyController extends Controller
         // 201 significa "Created": se ha creado un recurso nuevo.
         return response()->json($academy, 201);
     }
+
+    // Recibe dos cosas: el $request (los datos nuevos) y el $id (de la URL).
+    public function update(Request $request, $id)
+    {
+        // 1. Buscamos la academia que se quiere modificar.
+        $academy = Academy::find($id);
+
+        // 2. Si no existe, cortamos con un 404 (igual que en show).
+        if ($academy == null) {
+            return response()->json(['message' => 'Academia no encontrada'], 404);
+        }
+
+        // 3. Validamos los datos nuevos (mismas reglas que en store).
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'address' => 'required|string|max:255',
+            'phone' => 'required|string|max:20',
+            'email' => 'required|email|max:255',
+        ]);
+
+        // 4. Cambiamos los valores del objeto que ya existe.
+        // Ojo: NO usamos "new Academy()", porque no queremos crear otra,
+        // sino modificar la que encontramos con find().
+        $academy->user_id = $request->user_id;
+        $academy->name = $request->name;
+        $academy->description = $request->description;
+        $academy->address = $request->address;
+        $academy->phone = $request->phone;
+        $academy->email = $request->email;
+
+        // 5. save() sobre un objeto que ya existe hace un UPDATE, no un INSERT.
+        // Laravel actualiza solo updated_at; created_at se queda como estaba.
+        $academy->save();
+
+        // 6. Devolvemos la academia ya modificada con 200 (no 201: no se ha creado nada).
+        return response()->json($academy, 200);
+    }
+
+    // Solo necesita el $id: para borrar no hay que enviar datos en el cuerpo.
+    public function destroy($id)
+    {
+        // 1. Buscamos la academia (igual que en show y update).
+        $academy = Academy::find($id);
+
+        // 2. Si no existe, 404.
+        if ($academy == null) {
+            return response()->json(['message' => 'Academia no encontrada'], 404);
+        }
+
+        // 3. delete() elimina la fila de la base de datos.
+        $academy->delete();
+
+        // 4. Devolvemos un mensaje de confirmación con 200.
+        return response()->json(['message' => 'Academia eliminada'], 200);
+    }
 }
