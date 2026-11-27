@@ -21,7 +21,7 @@ return new class extends Migration {
             $table->timestamps();
 
             // Cada curso apunta a una academia. Si se borra la academia, se borran sus cursos.
-            $table->foreign('academy_id')->references('id')->on('academies')->onDelete('cascade');
+            $table->foreign('academy_id')->references('id')->on('academies')->onDelete('restrict');
         });
     }
     /**
