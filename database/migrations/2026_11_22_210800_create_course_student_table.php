@@ -17,8 +17,8 @@ return new class extends Migration {
         $table->timestamp('enrolled_at')->nullable(); // Fecha y hora de la matrícula
         $table->timestamps();
 
-        $table->foreign('course_id')->references('id')->on('courses')->onDelete('cascade');
-        $table->foreign('student_id')->references('id')->on('students')->onDelete('cascade');
+        $table->foreign('course_id')->references('id')->on('courses')->onDelete('restrict');
+        $table->foreign('student_id')->references('id')->on('students')->onDelete('restrict');
 
         // Evita matricular dos veces al mismo alumno en el mismo curso.
         // Mira las DOS columnas juntas: la pareja no puede repetirse.
