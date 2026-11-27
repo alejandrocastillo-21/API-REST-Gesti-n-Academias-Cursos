@@ -12,7 +12,7 @@ class StudentRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -20,10 +20,14 @@ class StudentRequest extends FormRequest
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
-    public function rules(): array
+    public static function rules(): array
     {
         return [
-            //
+            'name' => 'required|string|max:255',
+            'surname' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:students,email',
+            'phone' => 'nullable|string|max:20',
+            'date_of_birth' => 'required|date',
         ];
     }
 }
