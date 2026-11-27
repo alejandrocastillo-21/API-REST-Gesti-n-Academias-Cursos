@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 use App\Models\Course;
 use Illuminate\Http\Request;
+use App\Models\Student;
 
 class CourseController extends Controller
 {
@@ -100,5 +101,81 @@ class CourseController extends Controller
         $course->delete();
 
         return response()->json(['message' => 'Curso eliminado'], 200);
+    }
+
+    // Es el mismo patrón de la Fase 10, pero con la relación N:N.
+    public function students($id)
+    {
+        $course = Course::find($id);
+
+        if ($course == null) {
+            return response()->json(['message' => 'Curso no encontrado'], 404);
+        }
+
+        // $course->students (sin paréntesis) ejecuta la relación belongsToMany
+        // y devuelve los alumnos matriculados, con los datos de la pivote en "pivot".
+        $students = $course->students;
+
+        return response()->json($students, 200);
+    }
+
+    public function enroll(Request $request, $id)
+    {
+        // 1. ¿Existe el curso?
+        $course = Course::find($id);
+
+        if ($course == null) {
+            return response()->json(['message' => 'Curso no encontrado'], 404);
+        }
+
+        // 2. Validamos el dato enviado: debe venir y existir en la tabla students.
+        $request->validate([
+            'student_id' => 'required|exists:students,id',
+        ]);
+
+        // 3. ¿Ya está matriculado?
+        // students() CON paréntesis devuelve la relación para seguir consultando:
+        // where() filtra la pivote y exists() responde true o false.
+        $yaMatriculado = $course->students()->where('student_id', $request->student_id)->exists();
+
+        if ($yaMatriculado == true) {
+            return response()->json(['message' => 'El alumno ya está matriculado en este curso'], 409);
+        }
+
+        // 4. ¿Quedan plazas? Contamos los matriculados y comparamos con capacity.
+        $totalMatriculados = $course->students()->count();
+
+        if ($totalMatriculados >= $course->capacity) {
+            return response()->json(['message' => 'El curso no tiene plazas disponibles'], 409);
+        }
+
+        // 5. attach() inserta una fila en la tabla pivote course_student.
+        // El segundo parámetro rellena las columnas extra: la fecha de matrícula.
+        // Como la relación tiene withTimestamps(), created_at y updated_at se rellenan solos.
+        $course->students()->attach($request->student_id, ['enrolled_at' => now()]);
+
+        return response()->json(['message' => 'Alumno matriculado correctamente'], 201);
+    }
+
+    public function unenroll($id, $studentId)
+    {
+        // 1. ¿Existe el curso?
+        $course = Course::find($id);
+
+        if ($course == null) {
+            return response()->json(['message' => 'Curso no encontrado'], 404);
+        }
+
+        // 2. ¿Está ese alumno matriculado en este curso?
+        $matriculado = $course->students()->where('student_id', $studentId)->exists();
+
+        if ($matriculado == false) {
+            return response()->json(['message' => 'El alumno no está matriculado en este curso'], 404);
+        }
+
+        // 3. detach() borra la fila de la pivote. NO borra al alumno ni al curso.
+        $course->students()->detach($studentId);
+
+        return response()->json(['message' => 'Alumno desmatriculado'], 200);
     }
 }

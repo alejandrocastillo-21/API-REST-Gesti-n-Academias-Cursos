@@ -33,3 +33,12 @@ Route::apiResource('academies', AcademyController::class);
 // {id} es el id de la academia. El método "courses" lo escribimos nosotros
 // en AcademyController (no es uno de los cinco del apiResource).
 Route::get('/academies/{id}/courses', [AcademyController::class, 'courses']);
+
+// Ver los alumnos matriculados en un curso.
+Route::get('/courses/{id}/students', [CourseController::class, 'students']);
+
+// Matricular un alumno en un curso. El student_id viaja en el body.
+Route::post('/courses/{id}/students', [CourseController::class, 'enroll']);
+
+// Desmatricular: el alumno va en la URL, porque identifica QUÉ se borra.
+Route::delete('/courses/{id}/students/{studentId}', [CourseController::class, 'unenroll']);
